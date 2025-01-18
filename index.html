@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOFR是一切的原因</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f7;
+            color: #1d1d1f;
+        }
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #1d1d1f;
+            text-align: center;
+        }
+        .input-group {
+            margin-bottom: 16px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #1d1d1f;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d2d2d7;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #1d1d1f;
+            background-color: #ffffff;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007aff;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0063cc;
+        }
+        .result {
+            margin-top: 20px;
+            font-size: 16px;
+            font-weight: 500;
+            color: #1d1d1f;
+            text-align: center;
+        }
+        .history {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #1d1d1f;
+        }
+        .history h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .history ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .history ul li {
+            padding: 12px;
+            border-bottom: 1px solid #d2d2d7;
+        }
+        .history ul li:last-child {
+            border-bottom: none;
+        }
+        .clear-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #ff3b30;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 20px;
+        }
+        .clear-btn:hover {
+            background-color: #ff1a1a;
+        }
+        .risk-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .risk-low {
+            background-color: #34c759; /* 绿色 */
+        }
+        .risk-medium {
+            background-color: #ffcc00; /* 黄色 */
+        }
+        .risk-high {
+            background-color: #ff3b30; /* 红色 */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SOFR是一切的原因</h1>
+        <div class="input-group">
+            <label for="sofr">SOFR（担保隔夜融资利率，%）：</label>
+            <input type="number" id="sofr" step="0.01" placeholder="例如：4.28">
+        </div>
+        <div class="input-group">
+            <label for="fed-rate">联邦有效利率（%）：</label>
+            <input type="number" id="fed-rate" step="0.01" placeholder="例如：4.33">
+        </div>
+        <button onclick="analyze()">分析</button>
+        <div class="result" id="result"></div>
+        <div class="history">
+            <h2>搜索记录</h2>
+            <ul id="history-list"></ul>
+            <button class="clear-btn" onclick="clearHistory()">清空记录</button>
+        </div>
+    </div>
+
+    <script>
+        // 从 localStorage 加载历史记录
+        let searchHistory = JSON.parse(localStorage.getItem('searchHistory')) || [];
+
+        // 显示历史记录
+        function renderHistory() {
+            const historyList = document.getElementById('history-list');
+            historyList.innerHTML = searchHistory
+                .map(
+                    (entry) =>
+                        `<li>
+                            <div>
+                                <strong>时间：</strong>${entry.time}<br>
+                                <strong>SOFR：</strong>${entry.sofr}%<br>
+                                <strong>联邦有效利率：</strong>${entry.fedRate}%<br>
+                                <strong>差值：</strong>${entry.difference.toFixed(2)}%<br>
+                                <strong>风险提示：</strong>
+                                <span class="risk-indicator ${getRiskClass(entry.difference)}"></span>
+                                ${getRiskMessage(entry.difference)}
+                            </div>
+                        </li>`
+                )
+                .join('');
+        }
+
+        // 获取风险等级对应的 CSS 类
+        function getRiskClass(difference) {
+            if (difference > 0.17) return 'risk-high';
+            if (difference > 0.07) return 'risk-medium';
+            return 'risk-low';
+        }
+
+        // 获取风险提示信息
+        function getRiskMessage(difference) {
+            if (difference > 0.17) return '请全部清仓休息。';
+            if (difference > 0.07) return '减仓至少一半。';
+            return '无风险。';
+        }
+
+        // 清空历史记录
+        function clearHistory() {
+            if (confirm("确定要清空所有记录吗？")) {
+                searchHistory = [];
+                localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+                renderHistory();
+            }
+        }
+
+        // 初始化时渲染历史记录
+        renderHistory();
+
+        // 分析函数
+        function analyze() {
+            const sofr = parseFloat(document.getElementById('sofr').value);
+            const fedRate = parseFloat(document.getElementById('fed-rate').value);
+
+            if (isNaN(sofr) || isNaN(fedRate)) {
+                alert("请输入有效的数值！");
+                return;
+            }
+
+            const difference = sofr - fedRate;
+            let resultText = "";
+
+            if (difference > 0.17) {
+                resultText = "风险：心肌梗塞（差值 > 17 个基点），请全部清仓休息。";
+            } else if (difference > 0.07) {
+                resultText = "风险：心绞痛（差值 > 7 个基点），减仓至少一半。";
+            } else {
+                resultText = "无风险。";
+            }
+
+            document.getElementById('result').innerText = `计算结果：${resultText}（差值：${difference.toFixed(2)}%）`;
+
+            // 获取当前时间
+            const now = new Date();
+            const timeString = now.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+
+            // 保存到历史记录
+            searchHistory.push({ sofr, fedRate, difference, time: timeString });
+            localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+
+            // 重新渲染历史记录
+            renderHistory();
+        }
+    </script>
+</body>
+</html>
