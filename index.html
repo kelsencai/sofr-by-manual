@@ -119,11 +119,37 @@
         .risk-high {
             background-color: #ff3b30; /* 红色 */
         }
+        .external-links {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .external-links a {
+            display: inline-block;
+            margin: 5px;
+            padding: 10px 20px;
+            background-color: #007aff;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        .external-links a:hover {
+            background-color: #0063cc;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>SOFR是一切的原因</h1>
+
+        <!-- 外部链接部分 -->
+        <div class="external-links">
+            <a href="https://www.newyorkfed.org/markets/reference-rates/sofr" target="_blank">查看 SOFR 最新数据</a>
+            <a href="https://www.federalreserve.gov/releases/h15/" target="_blank">查看联邦基金利率</a>
+        </div>
+
+        <!-- SOFR 分析工具 -->
         <div class="input-group">
             <label for="sofr">SOFR（担保隔夜融资利率，%）：</label>
             <input type="number" id="sofr" step="0.01" placeholder="例如：4.28">
